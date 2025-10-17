@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
 import { RedisModule } from './redis.module';
 import { CacheService } from './cache.service';
@@ -27,12 +27,12 @@ describe('RedisModule', () => {
     jest.restoreAllMocks();
 
     if (module) {
-      const client = module.get('REDIS_CLIENT', { strict: false }) as any;
-      client.quit
-        ? await client
-            ?.quit()
-            .catch(() => client.disconnect && client.disconnect())
-        : client.disconnect && client.disconnect();
+      const client = module.get('REDIS_CLIENT', { strict: false });
+      if (client.quit) {
+        await client?.quit().catch(() => client?.disconnect());
+      } else {
+        client?.disconnect();
+      }
       await module.close();
     }
   });

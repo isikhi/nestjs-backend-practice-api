@@ -10,13 +10,17 @@ import { Transform } from 'class-transformer';
 export class CreateDirectorDto {
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @ApiProperty({ description: 'Director first name', example: 'Francis' })
   firstName: string;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @ApiPropertyOptional({
     description: 'Director last name',
     example: 'Ford Coppola',
@@ -33,7 +37,9 @@ export class CreateDirectorDto {
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @ApiPropertyOptional({
     description: 'Short bio',
     example: 'American film director, producer, and screenwriter',

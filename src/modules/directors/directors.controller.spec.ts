@@ -17,12 +17,12 @@ describe('DirectorsController (unit)', () => {
     create: jest.fn((dto) =>
       Promise.resolve(createMockDoc({ _id: 'new-dir-id', ...dto })),
     ),
-    findAll: jest.fn((query) =>
-      Promise.resolve({
+    findAll: jest.fn(() => {
+      return Promise.resolve({
         data: [createMockDoc({ _id: 'd1', firstName: 'John' })],
         meta: { page: 1, limit: 20, total: 1, totalPages: 1 },
-      }),
-    ),
+      });
+    }),
     findOne: jest.fn((id) =>
       Promise.resolve(createMockDoc({ _id: id, firstName: 'John' })),
     ),

@@ -1,5 +1,4 @@
 import { MoviesService } from './movies.service';
-import { NotFoundException } from '@nestjs/common';
 import { MoviesQueryDto } from './dtos/movies-query.dto';
 
 describe('MoviesService (unit)', () => {
@@ -17,12 +16,12 @@ describe('MoviesService (unit)', () => {
     findAll: jest.fn(() =>
       Promise.resolve([createMockMovie({ _id: '1', title: 't' })]),
     ),
-    findOne: jest.fn((id, populate) =>
+    findOne: jest.fn((id) =>
       Promise.resolve(
         createMockMovie({ _id: id, title: 't', directorId: 'd1' }),
       ),
     ),
-    update: jest.fn((id, d, populate) =>
+    update: jest.fn((id, d) =>
       Promise.resolve(createMockMovie({ _id: id, directorId: 'd1', ...d })),
     ),
     remove: jest.fn((id) => Promise.resolve(createMockMovie({ _id: id }))),
@@ -73,7 +72,7 @@ describe('MoviesService (unit)', () => {
       order: 'desc',
       populate: false,
     } as MoviesQueryDto;
-    const result = await service.findAll(query);
+    const result: any = await service.findAll(query);
     expect(result.data).toBeDefined();
     expect(result.meta).toBeDefined();
     expect(mockRepo.findWithPagination).toHaveBeenCalled();
@@ -81,8 +80,8 @@ describe('MoviesService (unit)', () => {
   });
 
   it('should find one movie', async () => {
-    const one = await service.findOne('1', false);
-    expect(one!._id).toBe('1');
+    const one: any = await service.findOne('1', false);
+    expect(one._id).toBe('1');
     expect(mockCache.get).toHaveBeenCalledWith('movies:1:populate=false');
     expect(mockCache.set).toHaveBeenCalled();
   });

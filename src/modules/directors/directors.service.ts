@@ -9,6 +9,7 @@ import { MoviesRepository } from '../movies/movies.repository';
 import { CreateDirectorDto } from './dtos/create-director.dto';
 import { CacheService } from '../../infra/redis/cache.service';
 import { DirectorsQueryDto } from './dtos/directors-query.dto';
+import { Director } from './schemas/director.schema';
 
 @Injectable()
 export class DirectorsService {
@@ -23,16 +24,26 @@ export class DirectorsService {
   ) {}
 
   async create(data: CreateDirectorDto) {
-    const payload: Partial<CreateDirectorDto> = { ...data };
-    if (payload.birthDate && typeof payload.birthDate === 'string') {
-      payload.birthDate = new Date(payload.birthDate);
-    }
-    const director = await this.repo.create(payload as Partial<any>);
+    const director = await this.repo.create({
+      ...data,
+      birthDate:
+        typeof data.birthDate === 'string'
+          ? new Date(data.birthDate)
+          : data.birthDate,
+    });
     this.logger.debug(`Created director ${director._id}`);
     return director.toJSON();
   }
 
-  async findAll(query: DirectorsQueryDto) {
+  async findAll(query: DirectorsQueryDto): Promise<{
+    data: Director[];
+    meta: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = query.skip;
@@ -57,7 +68,7 @@ export class DirectorsService {
 
   async findOne(id: string) {
     const cacheKey = `${this.CACHE_KEY_PREFIX}${id}`;
-    const cached = await this.cache.get<any>(cacheKey);
+    const cached = await this.cache.get(cacheKey);
 
     if (cached) {
       this.logger.debug(`Returning cached director ${id}`);

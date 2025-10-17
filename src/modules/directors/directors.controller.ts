@@ -15,6 +15,7 @@ import { DirectorResponseDto } from './dtos/director-response.dto';
 import { DirectorsQueryDto } from './dtos/directors-query.dto';
 import { PaginatedResponseDto } from '../../common/dtos/paginated-response.dto';
 import { plainToInstance } from 'class-transformer';
+import { ApiPaginatedResponse } from '../../common/decorators/api-paginated-response.decorator';
 
 @ApiTags('directors')
 @Controller('directors')
@@ -30,14 +31,15 @@ export class DirectorsController {
   }
 
   @Get()
-  @ApiResponse({ status: 200, type: PaginatedResponseDto })
-  async findAll(@Query() query: DirectorsQueryDto) {
-    const result = await this.service.findAll(query);
+  @ApiOperation({ summary: 'Get all directors with pagination' })
+  @ApiPaginatedResponse(DirectorResponseDto)
+  async findAll(
+    @Query() query: DirectorsQueryDto,
+  ): Promise<PaginatedResponseDto<DirectorResponseDto>> {
+    const { data, meta } = await this.service.findAll(query);
     return {
-      data: result.data.map((director) =>
-        plainToInstance(DirectorResponseDto, director),
-      ),
-      meta: result.meta,
+      data: plainToInstance(DirectorResponseDto, data),
+      meta,
     };
   }
 

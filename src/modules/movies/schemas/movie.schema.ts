@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { Director } from '../../directors/schemas/director.schema';
 
 @Schema({ timestamps: true })
 export class Movie extends Document {
@@ -22,14 +23,14 @@ export class Movie extends Document {
   imdbId?: string;
 
   @Prop({ type: Types.ObjectId, ref: 'Director', required: true })
-  directorId: Types.ObjectId;
+  directorId: Types.ObjectId | Director;
 }
 
 export const MovieSchema = SchemaFactory.createForClass(Movie);
 
 MovieSchema.set('toJSON', {
-  transform: (_doc, ret) => {
-    ret._id = ret._id.toString();
+  transform: (_doc, ret: Record<string, unknown>) => {
+    ret._id = String(ret._id);
     return ret;
   },
 });

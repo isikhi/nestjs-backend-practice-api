@@ -6,7 +6,13 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { RequestWithId } from '../types/express.types';
+
+interface MongooseError {
+  name?: string;
+  kind?: string;
+}
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -14,13 +20,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<RequestWithId>();
 
-    const requestId =
-      (request as any).id ||
-      (request.headers &&
-        (request.headers['x-request-id'] || request.headers['X-Request-Id'])) ||
-      'no-id';
+    const requestId = request.id || 'no-id';
     const trace =
       exception instanceof Error ? exception.stack : JSON.stringify(exception);
     this.logger.error(
@@ -39,11 +41,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       return;
     }
 
-    const anyEx = exception as Record<string, unknown> | undefined;
+    const mongooseError = exception as MongooseError;
     if (
-      anyEx &&
-      ((anyEx as any).name === 'CastError' ||
-        (anyEx as any).kind === 'ObjectId')
+      mongooseError &&
+      (mongooseError.name === 'CastError' || mongooseError.kind === 'ObjectId')
     ) {
       const status = HttpStatus.BAD_REQUEST;
       const message = { error: 'Invalid identifier format' };

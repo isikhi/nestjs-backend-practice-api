@@ -22,7 +22,7 @@ export class HealthController {
     const redisHealthy = await this.cache.isHealthy();
     const cacheConfig = this.configService.get<CacheConfig>('cache')!;
 
-    const mongoHealthy = this.mongoConnection.readyState === 1; // 1 = connected
+    const mongoHealthy = Number(this.mongoConnection.readyState) === 1; // 1 = connected
 
     return {
       status: 'ok',
