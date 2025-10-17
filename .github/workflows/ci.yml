@@ -1,0 +1,39 @@
+name: CI - Test & Coverage
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  tests-in-container:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run Docker-based tests
+        run: |
+          chmod +x ./scripts/run-tests.sh
+          ./scripts/run-tests.sh
+
+      - name: Upload coverage from Docker tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-coverage-report
+          path: coverage/
+          retention-days: 7
+
+      - name: Upload test results from Docker tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-test-results
+          path: test-results/
+          retention-days: 7
