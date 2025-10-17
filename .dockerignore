@@ -1,0 +1,51 @@
+# Node modules
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build output
+dist
+build
+coverage
+
+# Development files
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation (optional, include if needed in container)
+README.md
+docs
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Logs
+logs
+*.log
+
+# Temporary files
+.temp
+.tmp
+*.pid
+*.seed
+
+# Docker files
+Dockerfile
+.dockerignore
+docker-compose*.yml
+docker

@@ -1,0 +1,412 @@
+{
+  "info": {
+    "name": "Movie API - Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection to test Movies and Directors endpoints (create, read, update, delete) with basic assertions and environment variable wiring."
+  },
+  "item": [
+    {
+      "name": "Directors",
+      "item": [
+        {
+          "name": "Create Director",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Quentin\",\n  \"lastName\": \"Tarantino\",\n  \"birthDate\": \"1963-03-27\",\n  \"bio\": \"Filmmaker\"\n}" },
+            "url": { "raw": "{{baseUrl}}/directors", "host": ["{{baseUrl}}"], "path": ["directors"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 200 or 201', function () { pm.expect(pm.response.code === 200 || pm.response.code === 201).to.be.true; });",
+                  "var json = pm.response.json();",
+                  "pm.test('body has id', function () { pm.expect(json._id || json.id).to.exist; });",
+                  "pm.environment.set('directorId', json._id || json.id);",
+                  "console.log('Saved directorId', pm.environment.get('directorId'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Directors",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/directors", "host": ["{{baseUrl}}"], "path": ["directors"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('response has data and meta', function () { pm.expect(json.data).to.exist; pm.expect(json.meta).to.exist; });",
+                  "pm.test('data is array', function () { pm.expect(Array.isArray(json.data)).to.be.true; });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Directors with Pagination",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/directors?page=1&limit=10&sortBy=lastName&order=asc", "host": ["{{baseUrl}}"], "path": ["directors"], "query": [{"key": "page", "value": "1"}, {"key": "limit", "value": "10"}, {"key": "sortBy", "value": "lastName"}, {"key": "order", "value": "asc"}] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('has pagination meta', function () { pm.expect(json.meta.page).to.eql(1); pm.expect(json.meta.limit).to.eql(10); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Director by Id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/directors/{{directorId}}", "host": ["{{baseUrl}}"], "path": ["directors", "{{directorId}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('returned id matches', function () { var id = json._id || json.id; pm.expect(id).to.eql(pm.environment.get('directorId')); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Movies",
+      "item": [
+        {
+          "name": "Create Movie (with director)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Inception\",\n  \"description\": \"A mind-bending thriller\",\n  \"releaseDate\": \"2010-07-16\",\n  \"genre\": \"Sci-Fi\",\n  \"rating\": 8.8,\n  \"imdbId\": \"tt1375666\",\n  \"directorId\": \"{{directorId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/movies", "host": ["{{baseUrl}}"], "path": ["movies"] }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["// ensure directorId is present; if not create a quick director"], "type": "text/javascript" }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 200 or 201', function () { pm.expect(pm.response.code === 200 || pm.response.code === 201).to.be.true; });",
+                  "var json = pm.response.json();",
+                  "pm.test('movie id exists', function () { pm.expect(json._id || json.id).to.exist; });",
+                  "pm.environment.set('movieId', json._id || json.id);",
+                  "console.log('Saved movieId', pm.environment.get('movieId'))"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Movie with Populate",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"The Dark Knight\",\n  \"description\": \"Batman fights Joker\",\n  \"releaseDate\": \"2008-07-18\",\n  \"genre\": \"Action\",\n  \"rating\": 9.0,\n  \"imdbId\": \"tt0468569\",\n  \"directorId\": \"{{directorId}}\"\n}" },
+            "url": { "raw": "{{baseUrl}}/movies?populate=true", "host": ["{{baseUrl}}"], "path": ["movies"], "query": [{"key": "populate", "value": "true"}] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 200 or 201', function () { pm.expect(pm.response.code === 200 || pm.response.code === 201).to.be.true; });",
+                  "var json = pm.response.json();",
+                  "pm.test('movie has director object', function () { pm.expect(json.director).to.exist; pm.expect(json.director.firstName).to.exist; });",
+                  "pm.environment.set('movieId2', json._id || json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Movie (validation fail)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"description\": \"missing title\" }" },
+            "url": { "raw": "{{baseUrl}}/movies", "host": ["{{baseUrl}}"], "path": ["movies"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('status is 400', function () { pm.expect(pm.response.code).to.eql(400); });"], "type": "text/javascript" }
+            }
+          ]
+        },
+        {
+          "name": "Get Movies",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/movies", "host": ["{{baseUrl}}"], "path": ["movies"] } },
+          "event": [
+            { 
+              "listen": "test", 
+              "script": { 
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('response has data and meta', function () { pm.expect(json.data).to.exist; pm.expect(json.meta).to.exist; });",
+                  "pm.test('data is array', function () { pm.expect(Array.isArray(json.data)).to.be.true; });"
+                ], 
+                "type": "text/javascript" 
+              } 
+            }
+          ]
+        },
+        {
+          "name": "Get Movies with Pagination",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/movies?page=1&limit=5", "host": ["{{baseUrl}}"], "path": ["movies"], "query": [{"key": "page", "value": "1"}, {"key": "limit", "value": "5"}] } },
+          "event": [
+            { 
+              "listen": "test", 
+              "script": { 
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('meta has pagination info', function () { pm.expect(json.meta.page).to.eql(1); pm.expect(json.meta.limit).to.eql(5); });",
+                  "pm.test('data length respects limit', function () { pm.expect(json.data.length).to.be.at.most(5); });"
+                ], 
+                "type": "text/javascript" 
+              } 
+            }
+          ]
+        },
+        {
+          "name": "Get Movies with Sorting",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/movies?sortBy=rating&order=desc", "host": ["{{baseUrl}}"], "path": ["movies"], "query": [{"key": "sortBy", "value": "rating"}, {"key": "order", "value": "desc"}] } },
+          "event": [
+            { 
+              "listen": "test", 
+              "script": { 
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('data is sorted by rating desc', function () {",
+                  "  if (json.data.length > 1) {",
+                  "    for (let i = 0; i < json.data.length - 1; i++) {",
+                  "      if (json.data[i].rating && json.data[i+1].rating) {",
+                  "        pm.expect(json.data[i].rating).to.be.at.least(json.data[i+1].rating);",
+                  "      }",
+                  "    }",
+                  "  }",
+                  "});"
+                ], 
+                "type": "text/javascript" 
+              } 
+            }
+          ]
+        },
+        {
+          "name": "Get Movies with Genre Filter",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/movies?genre=Sci-Fi", "host": ["{{baseUrl}}"], "path": ["movies"], "query": [{"key": "genre", "value": "Sci-Fi"}] } },
+          "event": [
+            { 
+              "listen": "test", 
+              "script": { 
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('all movies have Sci-Fi genre', function () {",
+                  "  json.data.forEach(function(movie) {",
+                  "    if (movie.genre) pm.expect(movie.genre).to.eql('Sci-Fi');",
+                  "  });",
+                  "});"
+                ], 
+                "type": "text/javascript" 
+              } 
+            }
+          ]
+        },
+        {
+          "name": "Get Movies with Director Filter",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/movies?directorId={{directorId}}", "host": ["{{baseUrl}}"], "path": ["movies"], "query": [{"key": "directorId", "value": "{{directorId}}"}] } },
+          "event": [
+            { 
+              "listen": "test", 
+              "script": { 
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('all movies belong to same director', function () {",
+                  "  var expectedDirectorId = pm.environment.get('directorId');",
+                  "  json.data.forEach(function(movie) {",
+                  "    pm.expect(movie.directorId).to.eql(expectedDirectorId);",
+                  "  });",
+                  "});"
+                ], 
+                "type": "text/javascript" 
+              } 
+            }
+          ]
+        },
+        {
+          "name": "Get Movies with Populate",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/movies?populate=true", "host": ["{{baseUrl}}"], "path": ["movies"], "query": [{"key": "populate", "value": "true"}] } },
+          "event": [
+            { 
+              "listen": "test", 
+              "script": { 
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('movies have director object populated', function () {",
+                  "  if (json.data.length > 0) {",
+                  "    pm.expect(json.data[0]).to.have.property('director');",
+                  "    pm.expect(json.data[0].director).to.have.property('firstName');",
+                  "  }",
+                  "});"
+                ], 
+                "type": "text/javascript" 
+              } 
+            }
+          ]
+        },
+        {
+          "name": "Get Movies Combined Query",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/movies?page=1&limit=10&sortBy=rating&order=desc&populate=true", "host": ["{{baseUrl}}"], "path": ["movies"], "query": [{"key": "page", "value": "1"}, {"key": "limit", "value": "10"}, {"key": "sortBy", "value": "rating"}, {"key": "order", "value": "desc"}, {"key": "populate", "value": "true"}] } },
+          "event": [
+            { 
+              "listen": "test", 
+              "script": { 
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('response has all expected features', function () {",
+                  "  pm.expect(json.meta.page).to.eql(1);",
+                  "  pm.expect(json.meta.limit).to.eql(10);",
+                  "  if (json.data.length > 0) {",
+                  "    pm.expect(json.data[0]).to.have.property('director');",
+                  "  }",
+                  "});"
+                ], 
+                "type": "text/javascript" 
+              } 
+            }
+          ]
+        },
+        {
+          "name": "Get Movie by Id",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/movies/{{movieId}}", "host": ["{{baseUrl}}"], "path": ["movies", "{{movieId}}"] } },
+          "event": [ { "listen": "test", "script": { "exec": ["pm.test('status 200', function () { pm.response.to.have.status(200); });","var json = pm.response.json();","pm.test('id matches', function () { var id = json._id || json.id; pm.expect(id).to.eql(pm.environment.get('movieId')); });"], "type": "text/javascript" } } ]
+        },
+        {
+          "name": "Get Movie by Id with Populate",
+          "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/movies/{{movieId}}?populate=true", "host": ["{{baseUrl}}"], "path": ["movies", "{{movieId}}"], "query": [{"key": "populate", "value": "true"}] } },
+          "event": [ 
+            { 
+              "listen": "test", 
+              "script": { 
+                "exec": [
+                  "pm.test('status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('movie has director object', function () { pm.expect(json.director).to.exist; pm.expect(json.director.firstName).to.exist; });",
+                  "pm.test('directorId is string', function () { pm.expect(typeof json.directorId).to.eql('string'); });"
+                ], 
+                "type": "text/javascript" 
+              } 
+            } 
+          ]
+        },
+        {
+          "name": "Update Movie",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"title\": \"Inception (Edited)\" }" },
+            "url": { "raw": "{{baseUrl}}/movies/{{movieId}}", "host": ["{{baseUrl}}"], "path": ["movies", "{{movieId}}"] }
+          },
+          "event": [ { "listen": "test", "script": { "exec": ["pm.test('status 200 or 201', function () { pm.expect(pm.response.code === 200 || pm.response.code === 201).to.be.true; });","var json = pm.response.json();","pm.test('title updated', function () { pm.expect(json.title === 'Inception (Edited)').to.be.true; });"], "type": "text/javascript" } } ]
+        },
+        {
+          "name": "Update Movie with Populate",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{ \"rating\": 9.5 }" },
+            "url": { "raw": "{{baseUrl}}/movies/{{movieId}}?populate=true", "host": ["{{baseUrl}}"], "path": ["movies", "{{movieId}}"], "query": [{"key": "populate", "value": "true"}] }
+          },
+          "event": [ 
+            { 
+              "listen": "test", 
+              "script": { 
+                "exec": [
+                  "pm.test('status 200 or 201', function () { pm.expect(pm.response.code === 200 || pm.response.code === 201).to.be.true; });",
+                  "var json = pm.response.json();",
+                  "pm.test('rating updated', function () { pm.expect(json.rating).to.eql(9.5); });",
+                  "pm.test('has director object', function () { pm.expect(json.director).to.exist; });"
+                ], 
+                "type": "text/javascript" 
+              } 
+            } 
+          ]
+        },
+        {
+          "name": "Delete Movie",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/movies/{{movieId}}", "host": ["{{baseUrl}}"], "path": ["movies", "{{movieId}}"] } },
+          "event": [ { "listen": "test", "script": { "exec": ["pm.test('status 200 or 204', function () { pm.expect(pm.response.code === 200 || pm.response.code === 204).to.be.true; });","try { var b = pm.response.json(); if (typeof b === 'boolean') pm.test('delete returned true', function () { pm.expect(b).to.be.true; }); } catch(e){}","pm.environment.unset('movieId');"], "type": "text/javascript" } } ]
+        },
+        {
+          "name": "Delete Second Movie",
+          "request": { "method": "DELETE", "url": { "raw": "{{baseUrl}}/movies/{{movieId2}}", "host": ["{{baseUrl}}"], "path": ["movies", "{{movieId2}}"] } },
+          "event": [ { "listen": "test", "script": { "exec": ["pm.test('status 200 or 204', function () { pm.expect(pm.response.code === 200 || pm.response.code === 204).to.be.true; });","pm.environment.unset('movieId2');"], "type": "text/javascript" } } ]
+        }
+      ]
+    },
+    {
+      "name": "Cleanup",
+      "item": [
+        {
+          "name": "Delete Director",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/directors/{{directorId}}", "host": ["{{baseUrl}}"], "path": ["directors", "{{directorId}}"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('status is 200 or 204', function () { pm.expect(pm.response.code === 200 || pm.response.code === 204).to.be.true; });",
+                  "// If response body is boolean true, assert it',",
+                  "try { var b = pm.response.json(); if (typeof b === 'boolean') pm.test('delete returned true', function () { pm.expect(b).to.be.true; }); } catch (e) { /* no json body */ }",
+                  "pm.environment.unset('directorId');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [ { "key": "baseUrl", "value": "http://localhost:3000/v1" } ]
+}

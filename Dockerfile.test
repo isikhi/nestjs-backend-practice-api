@@ -1,0 +1,35 @@
+# Stage 1: Base with all dependencies
+FROM node:22.20.0-alpine AS base
+
+WORKDIR /app
+
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+
+COPY . .
+
+RUN ls -la test/ && cat test/jest-e2e.json
+
+# Stage 2: Test Runner (Unit + E2E)
+FROM base AS test-runner
+
+RUN yarn install --frozen-lockfile
+
+# Create directories for test outputs
+RUN mkdir -p /app/coverage /app/test-results
+
+RUN yarn build
+
+CMD ["yarn", "test"]
+
+# Stage 3: Newman API Test Runner
+FROM postman/newman:6-alpine AS newman-runner
+
+RUN npm install -g newman-reporter-htmlextra
+
+# Create directory for test results
+RUN mkdir -p /test-results /postman
+
+WORKDIR /newman
+
+CMD ["newman", "--version"]

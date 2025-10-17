@@ -1,0 +1,152 @@
+# Docker Test Infrastructure
+# Completely isolated test environment with dedicated MongoDB and Redis instances
+
+services:
+  # Test MongoDB - Isolated database for tests
+  mongo-test:
+    image: mongo:7.0
+    container_name: movie-api-mongo-test
+    environment:
+      MONGO_INITDB_DATABASE: movies_test
+    tmpfs:
+      - /data/db  # In-memory database for faster tests
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Test Redis - Isolated cache for tests
+  redis-test:
+    image: redis:7-alpine
+    container_name: movie-api-redis-test
+    tmpfs:
+      - /data  # In-memory cache for faster tests
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # Unit & Integration Tests
+  test-unit:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: test-runner
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: movie-api-test-unit
+    environment:
+      NODE_ENV: test
+      MONGO_URI: mongodb://mongo-test:27017/movies_test
+      REDIS_HOST: redis-test
+      REDIS_PORT: 6379
+      CACHE_ENABLED: true
+      CACHE_DEFAULT_TTL: 300
+    depends_on:
+      mongo-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    command: yarn test:cov
+    volumes:
+      - ./coverage:/app/coverage
+      - ./test-results:/app/test-results
+
+  # E2E Tests
+  test-e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: test-runner
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    container_name: movie-api-test-e2e
+    environment:
+      NODE_ENV: test
+      PORT: 3000
+      MONGO_URI: mongodb://mongo-test:27017/movies_test
+      REDIS_HOST: redis-test
+      REDIS_PORT: 6379
+      CACHE_ENABLED: true
+      CACHE_DEFAULT_TTL: 300
+    depends_on:
+      mongo-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    command: yarn test:e2e
+    volumes:
+      - ./test-results:/app/test-results
+
+  # Postman/Newman API Tests
+  test-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      target: newman-runner
+    container_name: movie-api-test-api
+    environment:
+      BASE_URL: http://app-test:3000/v1
+    depends_on:
+      app-test:
+        condition: service_healthy
+    command: [
+      "run", "/postman/movie-api.postman_collection.json",
+      "-e", "/postman/test.postman_environment.json",
+      "--reporters", "cli,json,htmlextra",
+      "--reporter-json-export", "/test-results/newman-results.json",
+      "--reporter-htmlextra-export", "/test-results/newman-report.html",
+      "--color", "on"
+    ]
+    volumes:
+      - ./postman:/postman:ro
+      - ./test-results:/test-results
+
+  # Test Application Instance (for API tests)
+  app-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: movie-api-app-test
+    environment:
+      NODE_ENV: test
+      PORT: 3000
+      MONGO_URI: mongodb://mongo-test:27017/movies_test
+      REDIS_HOST: redis-test
+      REDIS_PORT: 6379
+      CACHE_ENABLED: true
+      CACHE_DEFAULT_TTL: 300
+    depends_on:
+      mongo-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/v1/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "3001:3000"  # Different port to avoid conflict with dev
+
+  # Test Orchestrator - Runs all tests in sequence
+  test-all:
+    image: alpine:latest
+    container_name: movie-api-test-orchestrator
+    depends_on:
+      test-unit:
+        condition: service_completed_successfully
+      test-e2e:
+        condition: service_completed_successfully
+      test-api:
+        condition: service_completed_successfully
+    command: echo "✅ All tests completed successfully!"
+    volumes:
+      - ./test-results:/test-results:ro
+
+volumes:
+  test-results:

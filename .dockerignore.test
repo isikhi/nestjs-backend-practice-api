@@ -1,0 +1,51 @@
+# .dockerignore for test builds
+# Keep test files, exclude only unnecessary items
+
+# Node modules
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build output (will be rebuilt)
+dist
+build
+
+# Development files
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# CI/CD
+.github
+.gitlab-ci.yml
+
+# Logs
+logs
+*.log
+
+# Temporary files
+.temp
+.tmp
+*.pid
+*.seed
+
+# Test results (will be generated)
+coverage
+test-results
+newman-results.json
+
+# Docker files
+docker-compose*.yml
