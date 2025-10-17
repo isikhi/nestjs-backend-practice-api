@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "movie-api.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "movie-api.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.env.PORT | default 3000 }}
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ include "movie-api.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}

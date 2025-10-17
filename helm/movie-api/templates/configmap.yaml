@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "movie-api.fullname" . }}-config
+  labels:
+    app.kubernetes.io/name: {{ include "movie-api.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  NODE_ENV: "{{ .Values.env.NODE_ENV }}"
+  PORT: "{{ .Values.env.PORT }}"
+  CACHE_ENABLED: "{{ .Values.env.CACHE_ENABLED }}"
+  CACHE_DEFAULT_TTL: "{{ .Values.env.CACHE_DEFAULT_TTL }}"
+  {{- if .Values.mongodb.enabled }}
+  {{- if .Values.mongodb.auth.enabled }}
+  MONGO_URI: "mongodb://{{ .Values.mongodb.auth.username }}:{{ .Values.mongodb.auth.password }}@{{ .Release.Name }}-mongodb:27017/{{ .Values.mongodb.auth.database }}?authSource={{ .Values.mongodb.auth.database }}"
+  {{- else }}
+  MONGO_URI: "mongodb://{{ .Release.Name }}-mongodb:27017/{{ .Values.mongodb.auth.database }}"
+  {{- end }}
+  {{- else }}
+  MONGO_URI: "{{ .Values.env.MONGO_URI | default "mongodb://localhost:27017/moviedb" }}"
+  {{- end }}
+  {{- if .Values.redis.enabled }}
+  REDIS_HOST: "{{ .Release.Name }}-redis-master"
+  REDIS_PORT: "6379"
+  {{- else }}
+  REDIS_HOST: "{{ .Values.env.REDIS_HOST | default "localhost" }}"
+  REDIS_PORT: "{{ .Values.env.REDIS_PORT | default "6379" }}"
+  {{- end }}
