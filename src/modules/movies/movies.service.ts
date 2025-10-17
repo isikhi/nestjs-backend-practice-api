@@ -10,9 +10,19 @@ import { CreateMovieDto } from './dtos/create-movie.dto';
 import { CacheService } from '../../infra/redis/cache.service';
 import { DirectorsRepository } from '../directors/directors.repository';
 import { MoviesQueryDto } from './dtos/movies-query.dto';
-import { PaginatedResponseDto } from '../../common/dtos/paginated-response.dto';
-import { FilterQuery } from 'mongoose';
+import { FilterQuery, HydratedDocument } from 'mongoose';
 import { Movie } from './schemas/movie.schema';
+import { Director } from '../directors/schemas/director.schema';
+import { PaginatedResponseDto } from 'src/common/dtos/paginated-response.dto';
+import { MovieResponseDto } from './dtos/movie-response.dto';
+
+type MovieDocument = HydratedDocument<Movie>;
+type DirectorDocument = HydratedDocument<Director>;
+
+interface MongoError extends Error {
+  code?: number;
+  keyPattern?: Record<string, unknown>;
+}
 
 @Injectable()
 export class MoviesService {
@@ -51,7 +61,10 @@ export class MoviesService {
     const movie = await this.repo.create(payload);
     this.logger.debug(`Created movie ${movie._id}`);
 
-    const populated = await this.repo.findOne(movie._id.toString(), populate);
+    const populated = await this.repo.findOne(String(movie._id), populate);
+    if (!populated)
+      throw new NotFoundException('Movie not found after creation');
+
     const normalized = this.normalizeMovie(populated, populate);
 
     // Cache the newly created movie
@@ -65,7 +78,9 @@ export class MoviesService {
     return normalized;
   }
 
-  async findAll(query: MoviesQueryDto) {
+  async findAll(
+    query: MoviesQueryDto,
+  ): Promise<PaginatedResponseDto<MovieResponseDto>> {
     const filters: FilterQuery<Movie> = {};
     if (query.genre) filters.genre = query.genre;
     if (query.directorId) filters.directorId = query.directorId;
@@ -85,7 +100,8 @@ export class MoviesService {
       : `${this.CACHE_KEY_PREFIX}list:page=${page}:limit=${limit}:sortBy=${sortBy}:order=${order}:populate=${populate}`;
 
     if (cacheKey) {
-      const cached = await this.cache.get<any>(cacheKey);
+      const cached: PaginatedResponseDto<MovieResponseDto> | null =
+        await this.cache.get(cacheKey);
       if (cached) {
         this.logger.debug(
           `Returning cached movie list (page=${page}, populate=${populate})`,
@@ -110,7 +126,7 @@ export class MoviesService {
       this.normalizeMovie(movie, populate),
     );
 
-    const result = {
+    const result: PaginatedResponseDto<MovieResponseDto> = {
       data: normalized,
       meta: {
         page,
@@ -132,7 +148,7 @@ export class MoviesService {
 
   async findOne(id: string, populate: boolean = false) {
     const cacheKey = `${this.CACHE_KEY_PREFIX}${id}:populate=${populate}`;
-    const cached = await this.cache.get<any>(cacheKey);
+    const cached = await this.cache.get(cacheKey);
 
     if (cached) {
       this.logger.debug(`Returning cached movie ${id} (populate=${populate})`);
@@ -181,9 +197,11 @@ export class MoviesService {
       this.logger.debug(`Updated movie ${id}, invalidated caches`);
 
       return this.normalizeMovie(updated, populate);
-    } catch (error: any) {
+    } catch (error) {
       if (error instanceof NotFoundException) throw error;
-      if (error.code === 11000 && error.keyPattern?.imdbId) {
+
+      const mongoError = error as MongoError;
+      if (mongoError.code === 11000 && mongoError.keyPattern?.imdbId) {
         throw new ConflictException(
           `Movie with IMDb ID '${payload.imdbId}' already exists`,
         );
@@ -207,24 +225,33 @@ export class MoviesService {
     return removed.toJSON();
   }
 
-  private normalizeMovie(movie: any, populate: boolean = true) {
-    const json = movie.toJSON();
+  private normalizeMovie(
+    movie: MovieDocument,
+    populate: boolean = true,
+  ): MovieResponseDto {
+    const json = movie.toJSON() as MovieResponseDto;
 
     if (!populate) {
       return json;
     }
 
-    const directorObject = movie.directorId;
-    const directorJson = directorObject
-      ? directorObject.toJSON
-        ? directorObject.toJSON()
-        : directorObject
-      : null;
+    // When populated, directorId is a Director document (not ObjectId)
+    const directorField = movie.directorId;
 
-    return {
-      ...json,
-      directorId: directorJson ? directorJson._id : json.directorId,
-      director: directorJson,
-    };
+    const isPopulated =
+      directorField &&
+      typeof directorField === 'object' &&
+      '_id' in directorField;
+
+    if (isPopulated) {
+      const director = directorField as DirectorDocument;
+      return {
+        ...json,
+        directorId: String(director._id),
+        director: director.toJSON() as MovieResponseDto['director'],
+      };
+    }
+
+    return json;
   }
 }

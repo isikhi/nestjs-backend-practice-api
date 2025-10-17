@@ -10,30 +10,43 @@ describe('MoviesController (unit)', () => {
   let controller: MoviesController;
   let service: MoviesService;
 
-  const createMockDoc = (data: any) => ({
+  const createMockDoc = (data: any, extra?: { populate: boolean }) => ({
     ...data,
     toJSON: () => data,
+    ...(extra && extra.populate && data.directorId
+      ? { director: { _id: data.directorId, name: 'Director 1' } }
+      : {}),
   });
 
   const mockMoviesService = {
     create: jest.fn((dto, populate) =>
       Promise.resolve(
-        createMockDoc({ _id: 'new-id', directorId: 'd1', ...dto }),
+        createMockDoc({ _id: 'new-id', directorId: 'd1', ...dto }, populate),
       ),
     ),
     findAll: jest.fn((query) =>
       Promise.resolve({
-        data: [createMockDoc({ _id: '1', title: 'Movie 1', directorId: 'd1' })],
+        data: [
+          createMockDoc(
+            { _id: '1', title: 'Movie 1', directorId: 'd1' },
+            query.populate,
+          ),
+        ],
         meta: { page: 1, limit: 20, total: 1, totalPages: 1 },
       }),
     ),
     findOne: jest.fn((id, populate) =>
       Promise.resolve(
-        createMockDoc({ _id: id, title: 'Movie 1', directorId: 'd1' }),
+        createMockDoc(
+          { _id: id, title: 'Movie 1', directorId: 'd1' },
+          populate,
+        ),
       ),
     ),
     update: jest.fn((id, dto, populate) =>
-      Promise.resolve(createMockDoc({ _id: id, directorId: 'd1', ...dto })),
+      Promise.resolve(
+        createMockDoc({ _id: id, directorId: 'd1', ...dto }, populate),
+      ),
     ),
     remove: jest.fn((id) => Promise.resolve({ _id: id })),
   };

@@ -17,6 +17,8 @@ import { MovieResponseDto } from './dtos/movie-response.dto';
 import { MoviesQueryDto } from './dtos/movies-query.dto';
 import { PopulateQueryDto } from '../../common/dtos/populate-query.dto';
 import { plainToInstance } from 'class-transformer';
+import { PaginatedResponseDto } from '../../common/dtos/paginated-response.dto';
+import { ApiPaginatedResponse } from '../../common/decorators/api-paginated-response.decorator';
 
 @ApiTags('movies')
 @Controller('movies')
@@ -41,16 +43,20 @@ export class MoviesController {
   @ApiOperation({
     summary: 'List movies with pagination, sorting, and filtering',
   })
-  @ApiResponse({ status: 200, description: 'Paginated list of movies' })
-  async findAll(@Query() query: MoviesQueryDto) {
+  @ApiPaginatedResponse(MovieResponseDto)
+  async findAll(
+    @Query() query: MoviesQueryDto,
+  ): Promise<PaginatedResponseDto<MovieResponseDto>> {
     const result = await this.service.findAll(query);
+    const data = result.data.map((movie) =>
+      plainToInstance(MovieResponseDto, movie, {
+        excludeExtraneousValues: true,
+      }),
+    );
+
     return {
       ...result,
-      data: result.data.map((movie) =>
-        plainToInstance(MovieResponseDto, movie, {
-          excludeExtraneousValues: true,
-        }),
-      ),
+      data,
     };
   }
 

@@ -14,13 +14,17 @@ import { Transform } from 'class-transformer';
 export class CreateMovieDto {
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @ApiProperty({ description: 'Movie title', example: 'The Godfather' })
   title: string;
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @ApiPropertyOptional({
     description: 'Movie description',
     example:
@@ -38,7 +42,9 @@ export class CreateMovieDto {
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @ApiPropertyOptional({ description: 'Genre', example: 'Crime' })
   genre?: string;
 
@@ -46,8 +52,9 @@ export class CreateMovieDto {
   @Min(0)
   @Max(10)
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }) => {
     if (value === null || value === undefined) return value;
+    if (typeof value !== 'number') return value;
     // Round to 1 decimal place like 9.82 > 9.8
     return Math.round(value * 10) / 10;
   })
@@ -59,7 +66,9 @@ export class CreateMovieDto {
 
   @IsString()
   @IsOptional()
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
   @Matches(/^tt\d{7,8}$/, {
     message: 'IMDb ID must be in format ttXXXXXXX (e.g., tt0068646)',
   })

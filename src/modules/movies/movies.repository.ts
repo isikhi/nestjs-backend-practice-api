@@ -1,8 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, FilterQuery } from 'mongoose';
+import { Model, FilterQuery, HydratedDocument } from 'mongoose';
 import { Movie } from './schemas/movie.schema';
 import { CreateMovieDto } from './dtos/create-movie.dto';
+
+type MovieDocument = HydratedDocument<Movie>;
 
 @Injectable()
 export class MoviesRepository {
@@ -27,7 +29,7 @@ export class MoviesRepository {
     order: 'asc' | 'desc' = 'desc',
     filters: FilterQuery<Movie> = {},
     populate: boolean = false,
-  ) {
+  ): Promise<MovieDocument[]> {
     const sortOrder = order === 'asc' ? 1 : -1;
     const query = this.movieModel
       .find(filters)
@@ -45,7 +47,10 @@ export class MoviesRepository {
     return this.movieModel.countDocuments(filters).exec();
   }
 
-  findOne(id: string, populate: boolean = false) {
+  findOne(
+    id: string,
+    populate: boolean = false,
+  ): Promise<MovieDocument | null> {
     const query = this.movieModel.findById(id);
     if (populate) {
       query.populate('directorId');
@@ -57,7 +62,7 @@ export class MoviesRepository {
     id: string,
     data: Partial<Movie> | Partial<CreateMovieDto>,
     populate: boolean = false,
-  ) {
+  ): Promise<MovieDocument | null> {
     const query = this.movieModel.findByIdAndUpdate(
       id,
       data as Partial<Movie>,
@@ -69,7 +74,7 @@ export class MoviesRepository {
     return query.exec();
   }
 
-  remove(id: string) {
+  remove(id: string): Promise<MovieDocument | null> {
     return this.movieModel.findByIdAndDelete(id).exec();
   }
 

@@ -19,8 +19,8 @@ export class Director extends Document {
 export const DirectorSchema = SchemaFactory.createForClass(Director);
 
 DirectorSchema.set('toJSON', {
-  transform: (_doc, ret) => {
-    ret._id = ret._id.toString();
+  transform: (_doc, ret: Record<string, unknown>) => {
+    ret._id = String(ret._id);
     return ret;
   },
 });

@@ -20,15 +20,15 @@ import { CacheConfig, RedisConfig } from '../../config/configuration';
           );
           // Return a mock client that does nothing
           return {
-            get: async () => null,
-            set: async () => 'OK',
-            setex: async () => 'OK',
-            del: async () => 0,
-            keys: async () => [],
-            ping: async () => 'PONG',
+            get: () => Promise.resolve(null),
+            set: () => Promise.resolve('OK'),
+            setex: () => Promise.resolve('OK'),
+            del: () => Promise.resolve(0),
+            keys: () => Promise.resolve([]),
+            ping: () => Promise.resolve('PONG'),
             on: () => {},
-            quit: async () => 'OK',
-          } as any;
+            quit: () => Promise.resolve('OK'),
+          } as unknown as Redis;
         }
 
         Logger.log('Creating Redis client connection', 'RedisModule');
