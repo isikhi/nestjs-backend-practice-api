@@ -1,0 +1,89 @@
+replicaCount: 2
+
+image:
+  repository: movie-api
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+  progressDeadlineSeconds: 300  # 5 min timeout for deployment
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: movie-api.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+env:
+  NODE_ENV: production
+  PORT: 3000
+  CACHE_ENABLED: "true"
+  CACHE_DEFAULT_TTL: "300"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Redis dependency (Bitnami chart)
+redis:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false  # For local dev; enable in production
+    password: ""
+  master:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+    persistence:
+      enabled: false  # Enable for production
+      size: 1Gi
+
+# MongoDB dependency (Bitnami chart)
+mongodb:
+  enabled: true
+  architecture: standalone
+  auth:
+    enabled: false  # For local dev; enable in production
+    rootUser: root
+    rootPassword: ""
+    username: movieapp
+    password: ""
+    database: moviedb
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  persistence:
+    enabled: false  # Enable for production
+    size: 8Gi

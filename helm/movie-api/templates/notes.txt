@@ -1,0 +1,15 @@
+# Movie API Helm Chart
+#
+# NOTES:
+# 1) If you installed the chart with embedded MongoDB/Redis:
+#    - Port-forward the service to access locally:
+#        kubectl port-forward svc/{{ include "movie-api.fullname" . }} 8080:80
+#    - Health endpoint:
+#        curl http://localhost:8080/v1/health
+#
+# 2) To render manifests without installing:
+#        helm template movie-api ./helm/movie-api --set mongodb.enabled=true --set redis.enabled=true
+#
+# 3) For production, see helm/movie-api/README.md for persistent storage, auth and registry examples.
+#
+# Now we are ready. Let's go

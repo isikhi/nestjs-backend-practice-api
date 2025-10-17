@@ -70,6 +70,10 @@ yarn docker:up
 - **Swagger Docs**: http://localhost:3000/docs
 - **Health Check**: http://localhost:3000/v1/health
 
+Kubernetes / Helm
+-----------------
+This repository includes a Helm chart to deploy the app (and optional MongoDB/Redis) to Kubernetes(includes health check and rolling updates). See `helm/movie-api/README.md` for a simple, production-aware deployment guide (minikube/GKE/EKS).
+
 ## 📚 API Documentation
 
 ### Endpoints
