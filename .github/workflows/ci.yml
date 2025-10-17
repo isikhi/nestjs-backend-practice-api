@@ -1,0 +1,86 @@
+name: CI - Test & Coverage
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Run unit tests with coverage
+        run: yarn test:cov
+
+      - name: Run E2E tests
+        run: yarn test:e2e
+        env:
+          NODE_ENV: test
+          MONGO_URI: mongodb://localhost:27017/movies_test
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          CACHE_ENABLED: false
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7
+
+  docker-test: # actually it is same thing with previous but inside docker containers. maybe useful for some envs but redundant after test it can be removed.
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run Docker-based tests
+        run: |
+          chmod +x ./scripts/run-tests.sh
+          ./scripts/run-tests.sh
+
+      - name: Upload coverage from Docker tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-coverage-report
+          path: coverage/
+          retention-days: 7
+
+      - name: Upload test results from Docker tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-test-results
+          path: test-results/
+          retention-days: 7

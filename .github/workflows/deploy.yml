@@ -1,0 +1,38 @@
+name: Deploy (Placeholder)
+
+on:
+  workflow_run:
+    workflows: ["CI - Test & Coverage"]
+    types:
+      - completed
+    branches: [ main ]
+  workflow_dispatch:  # manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deployment placeholder
+        run: |
+          echo "🚀 Deployment pipeline triggered"
+          echo "📦 This is a placeholder job (noop)"
+          echo "🔧 Future steps will include:"
+          echo "   - Build Docker image"
+          echo "   - Push to registry (GHCR/Docker Hub/ECR)"
+          echo "   - Helm upgrade --install to Kubernetes"
+          echo "   - Run smoke tests"
+          echo "   - Notify deployment status"
+          echo ""
+          echo "✅ Placeholder deployment completed successfully"
+
+      - name: Log environment info
+        run: |
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Run ID: ${{ github.run_id }}"
