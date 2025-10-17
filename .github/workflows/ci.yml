@@ -7,55 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'yarn'
-
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-#      - name: Lint
-#        run: yarn lint
-#       OPEN WHEN LINT ISSUES ARE FIXED AND SETTINGS ARE FINALIZED
-
-      - name: Run unit tests with coverage
-        run: yarn test:cov
-
-      - name: Run E2E tests
-        run: yarn test:e2e
-        env:
-          NODE_ENV: test
-          MONGO_URI: mongodb://localhost:27017/movies_test
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          CACHE_ENABLED: false
-
-      - name: Upload coverage reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 7
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: test-results/
-          retention-days: 7
-
-  docker-test: # actually it is same thing with previous but inside docker containers. maybe useful for some envs but redundant after test it can be removed.
+  tests-in-container:
     runs-on: ubuntu-latest
     
     steps:
